@@ -69,32 +69,7 @@
         }
         button:hover { background: #7c3aed; transform: translateY(-2px); }
         
-        /* Стили для экрана с колесом */
         #wheel-screen { display: none; }
-        .viewers {
-            display: inline-flex;
-            align-items: center;
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-        .viewers::before {
-            content: '';
-            width: 10px;
-            height: 10px;
-            background: #ef4444;
-            border-radius: 50%;
-            margin-right: 8px;
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
         .timer { font-size: 48px; font-weight: bold; font-variant-numeric: tabular-nums; margin: 20px 0; color: #cbd5e1; }
         
         .wheel-container {
@@ -132,7 +107,6 @@
 </head>
 <body>
 
-    <!-- ЭКРАН 1: СОЗДАНИЕ КОЛЕСА -->
     <div id="setup-screen" class="container">
         <h1>⚙️ Настройка колеса</h1>
         <p>Введите варианты (каждый с новой строки):</p>
@@ -147,9 +121,7 @@
         <button onclick="generateLink()">Создать ссылку и начать</button>
     </div>
 
-    <!-- ЭКРАН 2: САМО КОЛЕСО И ТАЙМЕР -->
     <div id="wheel-screen" class="container">
-        <div class="viewers" id="viewer-count">Зрителей: 1</div>
         <h1>Колесо Фортуны</h1>
         
         <p>Ссылка для приглашения друзей:</p>
@@ -166,8 +138,6 @@
     </div>
 
     <script>
-        // 1. Простая функция генерации случайных чисел на основе "зерна" (Seed)
-        // Это гарантирует, что у всех зрителей выпадет ОДИНАКОВЫЙ результат.
         function seededRandom(seed) {
             let t = seed += 0x6D2B79F5;
             t = Math.imul(t ^ t >>> 15, t | 1);
@@ -180,13 +150,11 @@
         let spinResultIndex = 0;
         let isSpinning = false;
 
-        // 2. Читаем параметры из URL
         const urlParams = new URLSearchParams(window.location.search);
         const urlOptions = urlParams.get('opts');
         const urlEndTime = parseInt(urlParams.get('end'));
         const urlSeed = parseInt(urlParams.get('seed'));
 
-        // 3. Если параметры есть — показываем колесо
         if (urlOptions && urlEndTime && urlSeed) {
             document.getElementById('setup-screen').style.display = 'none';
             document.getElementById('wheel-screen').style.display = 'block';
@@ -194,15 +162,10 @@
             options = decodeURIComponent(urlOptions).split(',');
             document.getElementById('share-link').value = window.location.href;
             
-            // "Фейковый" счетчик зрителей для атмосферы (от 2 до 15)
-            const fakeViewers = Math.floor(Math.random() * 14) + 2;
-            document.getElementById('viewer-count').innerText = `Зрителей: ${fakeViewers}`;
-            
             drawWheel();
             startCountdown(urlEndTime, urlSeed);
         }
 
-        // 4. Генерация ссылки создателем
         function generateLink() {
             const optsText = document.getElementById('options-input').value.trim();
             if (!optsText) return alert("Введите варианты!");
@@ -210,9 +173,8 @@
             const optsArray = optsText.split('\n').filter(o => o.trim() !== '');
             const timerSeconds = parseInt(document.getElementById('timer-input').value);
             
-            // Вычисляем время, когда таймер достигнет нуля (в миллисекундах)
             const endTime = Date.now() + (timerSeconds * 1000);
-            const randomSeed = Math.floor(Math.random() * 999999); // Уникальное зерно
+            const randomSeed = Math.floor(Math.random() * 999999);
             
             const params = new URLSearchParams();
             params.set('opts', encodeURIComponent(optsArray.join(',')));
@@ -220,10 +182,9 @@
             params.set('seed', randomSeed);
             
             const newUrl = window.location.origin + window.location.pathname + '?' + params.toString();
-            window.location.href = newUrl; // Перезагружаем страницу с параметрами
+            window.location.href = newUrl;
         }
 
-        // 5. Отрисовка колеса на Canvas
         function drawWheel() {
             const canvas = document.getElementById('wheel-canvas');
             const ctx = canvas.getContext('2d');
@@ -245,7 +206,6 @@
                 ctx.fill();
                 ctx.stroke();
 
-                // Текст
                 ctx.save();
                 ctx.translate(centerX, centerY);
                 ctx.rotate(i * sliceAngle + sliceAngle / 2);
@@ -257,7 +217,6 @@
             }
         }
 
-        // 6. Логика таймера
         function startCountdown(endTime, seed) {
             const timerDisplay = document.getElementById('timer-display');
             
@@ -277,7 +236,6 @@
             }, 1000);
         }
 
-        // 7. Вращение колеса
         function spinWheel(seed) {
             if (isSpinning) return;
             isSpinning = true;
@@ -285,21 +243,15 @@
             const canvas = document.getElementById('wheel-canvas');
             const resultDisplay = document.getElementById('result');
             
-            // Используем "зерно" чтобы выбрать победителя. 
-            // У всех зрителей seededRandom(seed) выдаст одинаковое число!
             const randomValue = seededRandom(seed);
             spinResultIndex = Math.floor(randomValue * options.length);
             
-            // Вычисляем угол, чтобы победитель оказался под стрелкой (сверху)
             const sliceAngle = 360 / options.length;
-            const spinAmount = 360 * 5; // 5 полных оборотов для красоты
-            // Смещаем так, чтобы центр выигрышного сектора оказался на 270 градусах (верх)
+            const spinAmount = 360 * 5; 
             const targetDegree = spinAmount + (270 - (spinResultIndex * sliceAngle + sliceAngle / 2));
             
-            // Запускаем CSS анимацию
             canvas.style.transform = `rotate(${targetDegree}deg)`;
             
-            // Ждем окончания анимации (5 секунд)
             setTimeout(() => {
                 resultDisplay.innerText = `🎉 Выпало: ${options[spinResultIndex]}!`;
                 resultDisplay.style.color = '#10b981';
